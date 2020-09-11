@@ -36,6 +36,7 @@ func main() {
 	// Listen & Serve
 	addr := net.JoinHostPort(config.Config.Host, config.Config.Port)
 	log.Printf("[service] listening on %s", addr)
+	log.Printf("[service] service running in version 2.0.5")
 
 	if (len(config.Config.SslCert) > 0) && (len(config.Config.SslKey) > 0) {
 		log.Fatal(http.ListenAndServeTLS(
