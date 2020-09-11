@@ -65,6 +65,13 @@ func AwsS3(w http.ResponseWriter, r *http.Request) {
 	}
 	// Get a S3 object
 	obj, err := client.S3get(c.S3Bucket, c.S3KeyPrefix+path, rangeHeader)
+	if aerr, ok := err.(awserr.Error); ok {
+		switch aerr.Code() {
+		case s3.ErrCodeNoSuchKey:
+			path += "/" + c.indexDocument
+			obj, err = s3get(c.s3Bucket, c.s3KeyPrefix+path, rangeHeader)
+		}
+	}
 	if err != nil {
 		code, message := toHTTPError(err)
 		http.Error(w, message, code)
