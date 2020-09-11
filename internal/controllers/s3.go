@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-openapi/swag"
 	"github.com/pottava/aws-s3-proxy/internal/config"
@@ -58,13 +59,24 @@ func AwsS3(w http.ResponseWriter, r *http.Request) {
 	// Ends with / -> listing or index.html
 	if strings.HasSuffix(path, "/") {
 		if c.DirectoryListing {
+			log.Printf("Ends with / -> listing or index.html 01")
 			s3listFiles(w, r, client, c.S3Bucket, c.S3KeyPrefix+path)
 			return
 		}
+		log.Printf("Ends with / -> listing or index.html 02")
 		path += c.IndexDocument
 	}
 	// Get a S3 object
 	obj, err := client.S3get(c.S3Bucket, c.S3KeyPrefix+path, rangeHeader)
+	if aerr, ok := err.(awserr.Error); ok {
+		log.Printf("error")
+		switch aerr.Code() {
+		case s3.ErrCodeNoSuchKey:
+			log.Printf("error ErrCodeNoSuchKey")
+			path += "/" + c.IndexDocument
+			obj, err = client.S3get(c.S3Bucket, c.S3KeyPrefix+path, rangeHeader)
+		}
+	}
 	if err != nil {
 		code, message := toHTTPError(err)
 		http.Error(w, message, code)
